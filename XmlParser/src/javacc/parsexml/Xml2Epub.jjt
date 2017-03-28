@@ -1,0 +1,519 @@
+/**
+ * XTM Parser created with JavaCC 1.5.33, compatible with JavaCC 1.5.0+ Eclipse Plugins
+ * Parser created by Gianluca Barbera and Marco Placidi
+ * XTM files are XML files which start with
+ * <?xml version="1.0" encoding="UTF-8"?><topicMap ...
+ * PLEASE CHECK XTM COMPATIBILITY IN SPECIFIC VERSION TOKENS SECTION! 
+ * Parser created to convert information fetched from an XTM file in an Epub file
+ */
+options
+{
+  static = true;
+}
+
+PARSER_BEGIN(XTMParser)
+package javacc.parsexml;
+
+import java.io.*;
+import javacc.structure.*;
+
+public class XTMParser {
+  private static boolean verboseParser; //verbose option on/off
+  // Main used for parser debug purpose
+  /** Use main only for debug
+	* @param args arg[0] must contain full path of xtm file
+	*/
+  public static void main(String args []) throws Exception
+  {
+	//Debug - > Always verbose
+	verboseParser = true;
+    
+	//FILE STREAM
+	FileInputStream in = null;
+	try {
+	  //Need file to parse...
+	  if(args.length<1) throw (new Exception("Full file path missing..."));
+	  String fileName = args[0];
+
+	  //Pre-process the input file
+	  File processedFile = new File (fileName+"_reloaded.xtm");
+	  String cmdLine = "native2ascii -encoding utf8 " + new File(fileName) + " " + processedFile;
+	  Process jdkProc = null;
+      try {
+        jdkProc = Runtime.getRuntime().exec(cmdLine);
+        jdkProc.waitFor();
+	  } catch (InterruptedException ie) {
+	    ie.printStackTrace();
+	  }
+	  System.out.println("File preprocessed.");
+
+	  in = new FileInputStream(processedFile.getPath());
+	  System.out.println("Now parsing " + fileName);
+	  new XTMParser(in);
+
+	  try {
+		//START PARSING
+		XTM xtm = XTMParser.start();
+	      
+		//Generate LOG
+		xtm.print(fileName+"-LOG.txt");
+	  } catch (Exception e) {
+		System.out.println("Oops.");
+		System.out.println(e.getMessage());
+	  }
+
+	} catch (Exception e) {
+		System.out.println("Oops.");
+		System.out.println(e.getMessage());
+	} finally {
+		if (in != null)
+			in.close();
+    }     
+  }
+
+  // Function for library purpose
+  /** Parse an XTM File into an {@link XTM} object 
+	* @param fullPathFileName Must contain full path of xtm file
+	* @param verboseOption Set it to TRUE if you want to print actions
+	*/
+  public static XTM parse(String fullPathFileName, boolean verboseOption) throws Exception
+  {
+	if(verboseOption) verboseParser = true;	else verboseParser = false;
+    
+	FileInputStream in = null;
+	XTM xtm = null;
+
+	try {
+	  //Need file to parse...
+	  if(fullPathFileName==null || fullPathFileName.isEmpty()) throw (new Exception("Full file path missing..."));
+	  String fileName = fullPathFileName;
+
+	  File processedFile = new File (fileName+"_reloaded.xtm");
+	  String cmdLine = "native2ascii -encoding utf8 " + new File(fileName) + " " + processedFile;
+	  Process jdkProc = null;
+      try {
+        jdkProc = Runtime.getRuntime().exec(cmdLine);
+        jdkProc.waitFor();
+	  } catch (InterruptedException ie) {
+	    ie.printStackTrace();
+	  }
+	  System.out.println("File preprocessed.");
+
+	  //Load file
+	  in = new FileInputStream(processedFile);
+	  System.out.println("Now parsing " + fileName);
+	  new XTMParser(in);
+
+	  try {
+		//START PARSING
+		xtm = XTMParser.start();
+	      
+		//Generate LOG
+		xtm.print(fileName+"-LOG.txt");
+
+	  } catch (Exception e) {
+		System.out.println("Oops.");
+		System.out.println(e.getMessage());
+	  }
+
+	} catch (Exception e) {
+		System.out.println("Oops.");
+		System.out.println(e.getMessage());
+	} finally {
+		if (in != null)
+			in.close();
+    }
+
+    //Return XTM Structure
+	return xtm;     
+  }
+}
+PARSER_END(XTMParser)
+
+SKIP :
+{
+  " "
+| "\t"
+| "\r"
+| "\n"
+| "\r\n"
+| < ("\r\n")* (" ")* "<!--" (~[ ">" ])* "-->" (" ")* ("\r\n")* > 	// Skip XTM (XML) Comments
+} 
+
+
+TOKEN :
+{
+/* COMMON USE TOKENS */
+  < #LETTER: [ "A"-"Z", "a"-"z" ] >
+| < #DIGIT: [ "0"-"9" ] >
+| < #VALID_URL_SYMBOLS: [ "/", "-", ".", "_", "~", ":", "?", "#", "[", "]", "@", "!", "$", "&", "'", "(", ")", "*", "+", ",", ";", "=" ] >
+
+/* SPECIFIC VERSION TOKENS */
+| < FILE_START : "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" >
+| < START_TOPIC_MAP : "<topicMap xmlns=\"http://www.topicmaps.org/xtm/\" version=\"2.0\">" >
+
+/* GENERAL XTM STRUCTURE TOKENS */
+| < START_TOPIC: "<topic id=\"topic" >
+| < END_TOPIC: "</topic>" >
+| < START_ASSOCIATION: "<association>" >
+| < END_ASSOCIATION: "</association>" >
+| < START_ROLE: "<role>" >
+| < END_ROLE: "</role>" >
+| < TAG_END: "\"/>" >
+| < END_TOPIC_MAP : "</topicMap>" >
+| < START_SUBJECT_LOCATOR: "<subjectLocator href=\"" >
+| < START_SUBJECT_IDENTIFIER: "<subjectIdentifier href=\"" >
+| < START_INSTANCE_OF: "<instanceOf>" >
+| < END_INSTANCE_OF: "</instanceOf>" >
+| < START_TOPIC_REF: "<topicRef href=\"#topic" >
+| < START_VARIANT: "<variant>" >
+| < END_VARIANT: "</variant>" >
+| < START_VALUE: "<value>" >
+| < END_VALUE: "</value>" >
+| < START_NAME: "<name>" >
+| < END_NAME: "</name>" >
+| < START_SCOPE: "<scope>" >
+| < END_SCOPE: "</scope>" >
+| < START_RESOURCE_DATA: "<resourceData>" >
+| < END_RESOURCE_DATA: "</resourceData>" >
+| < START_OCCURENCE: "<occurrence>" >
+| < END_OCCURENCE: "</occurrence>" >
+| < START_TYPE: "<type>" >
+| < END_TYPE: "</type>" >
+
+/* MULTI EXTENDED ALPHANUMERIC STRING TOKEN */
+| < #EXTENDED_ALPHANUMERIC_STRING: (["\r", "\n", "\t"])* ( ["A"-"Z", "a"-"z", "0"-"9", "\\", "/", " ", "!", "#", "$", "%", "&", "'", "(", ")", "*", "+", ",", "-", ".", ":", ";", "=", ">", "?", "@", "[", "]", "^", "_", "`", "{", "|", "}", "~"] )+ (["\r", "\n", "\t"])* >
+| < MULTI_EX_AL_ST: (< EXTENDED_ALPHANUMERIC_STRING >)+ >
+}
+
+/* PARSER START POINT */
+XTM start():
+{
+	XTM xtmFile; 
+}
+{
+  < FILE_START > xtmFile = parseXTM()
+  {
+    System.out.println("PARSING PROCESS OK");
+    return xtmFile;
+  }
+}
+
+XTM parseXTM():
+{
+ 	XTM x = new XTM(); 
+	TopicMap tm = new TopicMap();
+}
+{
+  < START_TOPIC_MAP > parseTopicMap(tm) < END_TOPIC_MAP >
+  {
+    x.setTopicMap(tm, false);
+    return x;
+  } 
+} 
+
+void parseTopicMap(TopicMap topicMap):
+{
+	TopicMap tm = topicMap;	
+	Topic topic = new Topic();
+	Association association = new Association();
+
+	String topicId;
+}
+{
+  < START_TOPIC > topicId = parseTopicID() "\">" parseTopic(topic) < END_TOPIC > [ parseTopicMap(tm) ]
+  {
+    topic.setTopicID(topicId);
+	tm.putTopic(topic);
+  }
+| < START_ASSOCIATION > parseAssociation(association) < END_ASSOCIATION > [ parseTopicMap(tm) ]
+  {
+    tm.putAssociation(association);
+  }
+} 
+
+/* TOKEN */
+
+void parseTopic(Topic topic):
+{
+	Topic t = topic;
+	String subjectLocator;
+	String subjectIdentifier;
+}
+{
+  < START_SUBJECT_LOCATOR > subjectLocator = parseTopicSubjLoc() < TAG_END > [ parseTopic(t) ]
+  {
+    if(verboseParser) System.out.println("TopicSubjLoc found");
+	t.addTopicSubjectLocator(subjectLocator);
+  }
+| < START_SUBJECT_IDENTIFIER > subjectIdentifier = parseTopicSubjIdentif() < TAG_END > [ parseTopic(t) ]
+  {
+    if(verboseParser) System.out.println("TopicSubjectIdentifier found");
+	t.addTopicSubjectIdentifier(subjectIdentifier);
+  }
+| < START_INSTANCE_OF > parseTopicIstanceOf(t) < END_INSTANCE_OF > [ parseTopic(t) ]
+  {
+	if(verboseParser) System.out.println("TopicIstanceOf found");
+  }
+| < START_NAME > parseTopicName(t) < END_NAME > [ parseTopic(t) ]
+  {
+	//OK... passo topic, oggetto manipolato per riferimento
+	if(verboseParser) System.out.println("TopicName found");
+  }
+| < START_OCCURENCE > parseTopicOccurence(t, null) < END_OCCURENCE > [ parseTopic(t) ]
+  {
+    if(verboseParser) System.out.println("TopicOccurrence found");
+  }    
+}
+
+void parseTopicIstanceOf(Topic topic):
+{
+  Topic t = topic;
+  String idTopicRefInstanceOf;
+}
+{
+  < START_TOPIC_REF > idTopicRefInstanceOf = parseTopicID() < TAG_END > [ parseTopicIstanceOf(t) ]
+  {
+    if(verboseParser) System.out.println("TopicIstanceOf found");
+    t.addTopicInstanceOf(idTopicRefInstanceOf);
+  }   
+}
+
+void parseTopicName(Topic topic):
+{
+  Topic t = topic;
+  TopicName tn = t.getTopicName();
+  if(tn == null) {
+	tn = t.getNewTopicName();
+  }
+  String topicNameValue;
+}
+{
+  < START_VALUE > topicNameValue = parseNameValue() < END_VALUE > [ parseTopicName(t) ] 
+  {
+    if(verboseParser) System.out.println("TopicNameValue found");
+    tn.setTopicNameValue(topicNameValue);
+  }
+| < START_VARIANT > parseNameVariant(t, null) < END_VARIANT > [ parseTopicName(t) ]
+  {
+	if(verboseParser) System.out.println("TopicNameVariant found");
+  }  
+}
+
+void parseNameVariant(Topic topic, TopicNameVariant tnv):
+{
+  Topic t = topic;
+  TopicNameVariant topicNameVariant = tnv;
+  if(topicNameVariant == null) {
+    topicNameVariant = t.getNewTopicNameVariant(); //ritorna il riferimento
+  }
+  String resourceData;
+}
+{
+  < START_SCOPE > parseTopicNameVariantScope(topicNameVariant) < END_SCOPE > [ parseNameVariant(t, topicNameVariant)]
+  {
+	//ok
+  }
+| < START_RESOURCE_DATA > resourceData = parseTopicNameVariantResData() < END_RESOURCE_DATA > [ parseNameVariant(t, topicNameVariant)]
+  {
+	topicNameVariant.setTopicNameVariantResourceData(resourceData);
+  }  
+}
+
+void parseTopicNameVariantScope(TopicNameVariant tnv):
+{
+  TopicNameVariant topicNameVariant = tnv;
+  String idTopicNameVariantScope;
+}
+{
+  < START_TOPIC_REF > idTopicNameVariantScope = parseTopicID() < TAG_END > [ parseTopicNameVariantScope(topicNameVariant) ]
+  {
+    topicNameVariant.addTopicNameVariantScope(idTopicNameVariantScope);
+  }   
+}
+
+void parseTopicOccurence(Topic t, TopicOccurrence to):
+{
+  Topic topic = t;
+  TopicOccurrence topicOccurence = to;
+  if(topicOccurence == null) { 
+  	topicOccurence = t.getNewTopicOccurence(); //ritorna il riferimento al nuovo topic occurence in topic
+  }
+  String topicType;
+  String topicOccurenceScope;
+  String topicOccurenceResData;
+}
+{
+  < START_TYPE > topicType = parseTopicOccurenceType() < END_TYPE > [   parseTopicOccurence(topic, topicOccurence) ]
+  {
+    if(verboseParser) System.out.println("TopicOccurenceType found");
+    topicOccurence.setTopicOccurenceType(topicType);
+  }
+| < START_SCOPE > topicOccurenceScope = parseTopicOccurenceScope() < END_SCOPE > [   parseTopicOccurence(topic, topicOccurence) ]
+  {
+    if(verboseParser) System.out.println("TopicOccurenceScope found");
+    topicOccurence.addTopicOccurenceScope(topicOccurenceScope);
+  }
+| < START_RESOURCE_DATA > topicOccurenceResData = parseTopicOccurenceResData() < END_RESOURCE_DATA > [   parseTopicOccurence(topic, topicOccurence) ]
+  {
+    if(verboseParser) System.out.println("TopicOccurenceResData found");
+	topicOccurence.setTopicOccurenceResourceData(topicOccurenceResData);
+  }  
+}
+
+String parseTopicOccurenceType():
+{
+  String idTopicRefOccurenceType;
+}
+{
+  < START_TOPIC_REF > idTopicRefOccurenceType = parseTopicID() < TAG_END >
+  {
+    return idTopicRefOccurenceType;
+  } 
+}
+
+String parseTopicOccurenceScope():
+{
+  String idTopicRefOccurenceScope;
+}
+{
+  < START_TOPIC_REF > idTopicRefOccurenceScope = parseTopicID() < TAG_END >
+  {
+	return idTopicRefOccurenceScope;
+  } 
+}
+
+/* ASSOCIATION */
+void parseAssociation(Association a):
+{
+	Association association = a;
+	AssociationRole associationRole = new AssociationRole();
+}
+{
+  < START_TYPE > parseAssociationType(association) < END_TYPE > [parseAssociation(association)]
+  {
+	//ok
+  }
+| < START_ROLE > parseAssociationRole(associationRole) < END_ROLE > [parseAssociation(association)]
+  {  
+	association.addAssociationRole(associationRole);
+  }  
+}
+
+void parseAssociationType(Association a):
+{
+  Association association = a;
+  String idAssociationType; 
+}
+{
+  < START_TOPIC_REF > idAssociationType = parseTopicID() < TAG_END >
+  {
+    if(verboseParser) System.out.println("AssociationType found");
+    association.setAssociationType(idAssociationType);
+  }   
+}
+
+void parseAssociationRole(AssociationRole as):
+{
+  AssociationRole associationRole = as;
+  String idAssociationRoleTopicRef;
+}
+{
+  < START_TYPE > parseAssociationRoleType(associationRole) < END_TYPE > [parseAssociationRole(associationRole)]
+  {
+	//ok
+  }
+| < START_TOPIC_REF > idAssociationRoleTopicRef = parseTopicID() < TAG_END >
+  {
+    if(verboseParser) System.out.println("AssociationRoleTopicRef found");
+	associationRole.setAssociationRoleTopicRef(idAssociationRoleTopicRef);
+  }  
+}
+
+void parseAssociationRoleType(AssociationRole as):
+{
+  AssociationRole associationRole = as;
+  String idAssociationRoleType; 
+}
+{
+  < START_TOPIC_REF > idAssociationRoleType = parseTopicID() < TAG_END >
+  {
+    if(verboseParser) System.out.println("AssociationRole found");
+    associationRole.setAssociationRoleType(idAssociationRoleType);
+  }   
+}
+
+/* FOGLIE */
+String parseTopicID():
+{
+  Token topicID;
+}
+{
+  topicID = < MULTI_EX_AL_ST >
+  {
+    if(verboseParser) System.out.println("Found topic id = " + topicID.image);
+    return (topicID.image);
+  }
+}
+
+String parseNameValue():
+{
+  Token nameValue;
+}
+{
+  nameValue = < MULTI_EX_AL_ST >
+  {
+    if(verboseParser) System.out.println(" Found name value = " + nameValue.image );
+    return (nameValue.image);
+  }
+}
+
+String parseTopicNameVariantResData():
+{
+  Token nameValue;
+}
+{
+  nameValue = < MULTI_EX_AL_ST > /* unicorn included */
+  {
+    if(verboseParser) System.out.println(" Found resource data = " + nameValue.image );
+    return (nameValue.image);
+  }
+}
+
+String parseTopicOccurenceResData():
+{
+  Token nameValue; 
+}
+{
+  nameValue = < MULTI_EX_AL_ST > /* unicorn included */
+  {
+    if(verboseParser) System.out.println(" Found resource data = " + nameValue.image );
+    return (nameValue.image);
+  }
+}
+
+
+/* more unicorn (?) */
+String parseTopicSubjLoc():
+{
+  Token nameValue; 
+}
+{
+  nameValue = < MULTI_EX_AL_ST > /* unicorn  included */
+  {
+    if(verboseParser) System.out.println(" Found resource data = " + nameValue.image );
+    return (nameValue.image);
+  }
+}
+
+String parseTopicSubjIdentif():
+{
+ Token nameValue; 
+}
+{
+  nameValue = < MULTI_EX_AL_ST > /* unicorn  included */
+  {
+    if(verboseParser) System.out.println(" Found resource data = " + nameValue.image );
+    return (nameValue.image);
+  }
+}
